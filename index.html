@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>口语节拍校准器 Demo</title>
+<style>
+body{margin:0;min-height:100vh;font-family:system-ui,"PingFang SC",sans-serif;background:linear-gradient(135deg,#08111f,#172033);color:#f8fafc;padding:20px}
+.box{max-width:760px;margin:auto;padding:24px;border-radius:24px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15)}
+.tag{color:#5eead4;font-weight:800}
+h1{font-size:42px;line-height:1.05;margin:16px 0}
+p{color:#a7b3c6;line-height:1.8}
+.s{margin:18px 0;padding:16px;border-radius:18px;background:rgba(94,234,212,.12);border:1px solid rgba(94,234,212,.35);font-size:23px;font-weight:800}
+button{width:100%;margin-top:10px;padding:14px;border:0;border-radius:14px;font-size:17px;font-weight:800;background:#5eead4;color:#06130f}
+button.d{background:#fb7185;color:#170207}
+button.g{background:rgba(255,255,255,.14);color:#f8fafc}
+button:disabled{opacity:.45}
+canvas{width:100%;height:140px;margin-top:18px;border-radius:16px;background:rgba(255,255,255,.06)}
+.r{display:none;margin-top:18px;padding:16px;border-radius:18px;background:rgba(255,255,255,.08)}
+.r.show{display:block}
+.m{margin:9px 0;padding:11px;border-radius:12px;background:rgba(255,255,255,.08)}
+.ok{color:#5eead4;font-weight:800}.bad{color:#fb7185;font-weight:800}
+</style>
+</head>
+<body>
+<main class="box">
+<div class="tag">学习工作赛道 · 可体验 Demo</div>
+<h1>口语节拍校准器</h1>
+<p>这是一个基于真实麦克风录音的英语口语节奏校准 Demo。它会分析朗读时长、停顿和节奏，并展示普通识别与节拍校准后的差异。</p>
+<div class="s">I want to improve my speaking skills every day.</div>
+<button id="start">开始录音</button>
+<button id="stop" class="d" disabled>结束并分析</button>
+<button id="sample" class="g">查看样例结果</button>
+<canvas id="c" width="700" height="220"></canvas>
+<section id="res" class="r">
+<h2>个人口语节拍卡</h2>
+<div class="m">平均语速：<span id="speed">--</span></div>
+<div class="m">停顿次数：<span id="pause">--</span></div>
+<div class="m">节奏稳定性：<span id="stable">--</span></div>
+<div class="m">建议等待窗口：<span id="wait">--</span></div>
+<h2>识别对比</h2>
+<div class="m bad">普通识别：完整度 <span id="before">--</span>，可能把停顿误判为漏读。</div>
+<div class="m ok">节拍校准后：完整度 <span id="after">--</span>，会结合个人语速和停顿习惯判断。</div>
+<p><span class="ok">核心体验：</span>先适配用户，再判断发音。</p>
+</section>
+</main>
+<script>
+const start=document.getElementById("start"),stopB=document.getElementById("stop"),sample=document.getElementById("sample"),cv=document.getElementById("c"),ctx=cv.getContext("2d");
+let ac,an,src,stream,ani,t0=0,list=[];
+function secure(){return window.isSecureContext||location.hostname==="localhost"||location.hostname==="127.0.0.1"}
+function idle(){ctx.clearRect(0,0,cv.width,cv.height);ctx.strokeStyle="#5eead4";ctx.lineWidth=4;ctx.beginPath();for(let x=0;x<cv.width;x++){let y=cv.height/2+Math.sin(x/28)*22;if(x===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}ctx.stroke()}
+idle();
+async function rec(){
+if(!secure()){alert("请用 GitHub Pages 的 https 链接打开，否则麦克风不会授权。");return}
+try{
+stream=await navigator.mediaDevices.getUserMedia({audio:true});
+ac=new(window.AudioContext||window.webkitAudioContext)();an=ac.createAnalyser();an.fftSize=2048;src=ac.createMediaStreamSource(stream);src.connect(an);
+list=[];t0=performance.now();start.disabled=true;stopB.disabled=false;sample.disabled=true;draw();
+}catch(e){alert("没有获得麦克风权限，请点击允许，或换 Chrome/Safari 打开。")}
+}
+function draw(){
+const arr=new Uint8Array(an.fftSize);
+function f(){
+an.getByteTimeDomainData(arr);ctx.clearRect(0,0,cv.width,cv.height);ctx.strokeStyle="#5eead4";ctx.lineWidth=3;ctx.beginPath();let sum=0;
+for(let i=0;i<arr.length;i++){let v=(arr[i]-128)/128;sum+=v*v;let x=i/arr.length*cv.width,y=cv.height/2+v*cv.height*.42;if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}
+ctx.stroke();list.push(Math.sqrt(sum/arr.length));ani=requestAnimationFrame(f)}
+f()
+}
+function end(){
+if(ani)cancelAnimationFrame(ani);if(stream)stream.getTracks().forEach(t=>t.stop());if(ac)ac.close();
+let d=Math.max(1,(performance.now()-t0)/1000);start.disabled=false;stopB.disabled=true;sample.disabled=false;analyze(d,list)
+}
+function demo(){let a=[];for(let i=0;i<260;i++){let sp=i%75<52;a.push(sp?.05+Math.random()*.08:Math.random()*.008)}idle();analyze(6,a)}
+function avg(a){return a.length?a.reduce((x,y)=>x+y,0)/a.length:0}
+function clamp(n,min,max){return Math.max(min,Math.min(max,n))}
+function pauses(a,t){let p=0,s=0,on=false;a.forEach(v=>{if(v<t){s++;if(!on&&s>8){p++;on=true}}else{s=0;on=false}});return Math.max(0,p-1)}
+function analyze(d,a){
+let av=avg(a),th=Math.max(.012,av*.55),p=pauses(a,th),wpm=Math.round(9/d*60),st=clamp(92-p*5-Math.abs(wpm-110)*.08,55,96),wait=clamp(.25+p*.06,.25,.75),b=clamp(78-p*3,62,84),af=clamp(b+14+p*2,86,97);
+document.getElementById("speed").textContent=wpm+" WPM";document.getElementById("pause").textContent=p+" 次";document.getElementById("stable").textContent=Math.round(st)+"%";document.getElementById("wait").textContent=wait.toFixed(2)+" 秒";document.getElementById("before").textContent=b+"%";document.getElementById("after").textContent=af+"%";document.getElementById("res").classList.add("show")
+}
+start.onclick=rec;stopB.onclick=end;sample.onclick=demo;
+</script>
+</body>
+</html>

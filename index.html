@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>口语节拍校准器 Demo</title>
+  <style>
+    :root {
+      --bg: #08111f;
+      --card: rgba(255, 255, 255, 0.08);
+      --card2: rgba(255, 255, 255, 0.13);
+      --text: #f8fafc;
+      --muted: #a7b3c6;
+      --accent: #5eead4;
+      --accent2: #fb7185;
+      --warn: #fbbf24;
+      --good: #86efac;
+      --border: rgba(255, 255, 255, 0.14);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 20% 10%, rgba(94, 234, 212, 0.25), transparent 30rem),
+        radial-gradient(circle at 85% 20%, rgba(251, 113, 133, 0.22), transparent 28rem),
+        linear-gradient(180deg, #08111f, #111827);
+      line-height: 1.7;
+      padding: 22px;
+    }
+
+    .page {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .hero {
+      padding: clamp(28px, 6vw, 70px);
+      border: 1px solid var(--border);
+      border-radius: 32px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
+      box-shadow: 0 28px 80px rgba(0,0,0,0.35);
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 7px 12px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      color: var(--accent);
+      background: rgba(94,234,212,0.08);
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    h1 {
+      margin-top: 42px;
+      font-size: clamp(42px, 8vw, 88px);
+      line-height: 0.95;
+      letter-spacing: -0.08em;
+      font-weight: 950;
+    }
+
+    .subtitle {
+      max-width: 780px;
+      margin-top: 22px;
+      color: var(--muted);
+      font-size: 18px;
+    }
+
+    .notice {
+      margin-top: 22px;
+      padding: 16px;
+      border: 1px solid rgba(251, 191, 36, 0.35);
+      border-radius: 18px;
+      color: var(--muted);
+      background: rgba(251, 191, 36, 0.08);
+    }
+
+    .notice.ok {
+      border-color: rgba(94, 234, 212, 0.35);
+      background: rgba(94, 234, 212, 0.08);
+    }
+
+    .notice strong {
+      color: var(--warn);
+    }
+
+    .notice.ok strong {
+      color: var(--accent);
+    }
+
+    section {
+      margin-top: 26px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 18px;
+    }
+
+    .card {
+      padding: 24px;
+      border: 1px solid var(--border);
+      border-radius: 26px;
+      background: var(--card);
+      box-shadow: 0 18px 50px rgba(0,0,0,0.22);
+      backdrop-filter: blur(16px);
+    }
+
+    h2 {
+      margin-bottom: 12px;
+      font-size: clamp(26px, 4vw, 38px);
+      line-height: 1.15;
+      letter-spacing: -0.04em;
+    }
+
+    h3 {
+      margin-bottom: 8px;
+      font-size: 20px;
+    }
+
+    p {
+      color: var(--muted);
+    }
+
+    .sentence-box {
+      margin-top: 18px;
+      padding: 18px;
+      border: 1px solid rgba(94, 234, 212, 0.32);
+      border-radius: 20px;
+      background: rgba(94, 234, 212, 0.08);
+    }
+
+    .sentence {
+      color: var(--text);
+      font-size: clamp(22px, 4vw, 32px);
+      line-height: 1.35;
+      font-weight: 900;
+    }
+
+    .buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    button {
+      min-height: 48px;
+      padding: 0 18px;
+      border: 0;
+      border-radius: 15px;
+      color: #06130f;
+      background: var(--accent);
+      font: inherit;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    button.secondary {
+      color: var(--text);
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.1);
+    }
+
+    button.danger {
+      color: #170207;
+      background: var(--accent2);
+    }
+
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .timer {
+      margin-top: 14px;
+      color: var(--accent);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 30px;
+      font-weight: 900;
+    }
+
+    .wave-wrap {
+      overflow: hidden;
+      height: 170px;
+      margin-top: 18px;
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02)),
+        repeating-linear-gradient(90deg, transparent 0 24px, rgba(255,255,255,0.05) 24px 25px);
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .profile {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .metric {
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background: rgba(255,255,255,0.06);
+    }
+
+    .metric .label {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .metric .value {
+      margin-top: 4px;
+      color: var(--text);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 24px;
+      font-weight: 900;
+    }
+
+    .bar {
+      overflow: hidden;
+      height: 8px;
+      margin-top: 9px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.1);
+    }
+
+    .bar span {
+      display: block;
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      transition: width 0.8s ease;
+    }
+
+    .insight {
+      margin-top: 16px;
+      padding: 16px;
+      border: 1px solid rgba(94, 234, 212, 0.35);
+      border-radius: 18px;
+      background: rgba(94, 234, 212, 0.08);
+      color: var(--muted);
+    }
+
+    .insight strong {
+      color: var(--accent);
+    }
+
+    .compare {
+      display: none;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    .compare.show {
+      display: grid;
+    }
+
+    .score {
+      float: right;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 26px;
+      font-weight: 950;
+    }
+
+    .before .score {
+      color: var(--accent2);
+    }
+
+    .after .score {
+      color: var(--accent);
+    }
+
+    ul {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+      list-style: none;
+    }
+
+    li {
+      padding: 11px 12px;
+      border-radius: 14px;
+      color: var(--muted);
+      background: rgba(255,255,255,0.06);
+    }
+
+    .poster {
+      padding: 26px;
+      border: 1px solid rgba(94, 234, 212, 0.32);
+      border-radius: 28px;
+      background:
+        linear-gradient(135deg, rgba(94,234,212,0.12), rgba(255,255,255,0.04)),
+        radial-gradient(circle at 85% 10%, rgba(251,113,133,0.2), transparent 18rem);
+    }
+
+    .poster h2 {
+      font-size: clamp(34px, 6vw, 64px);
+    }
+
+    @media (max-width: 850px) {
+      body {
+        padding: 14px;
+      }
+
+      .grid,
+      .compare {
+        grid-template-columns: 1fr;
+      }
+
+      .profile {
+        grid-template-columns: 1fr;
+      }
+
+      button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <div class="tag">学习工作赛道 · 可体验 Demo</div>
+      <h1>口语节拍校准器</h1>
+      <p class="subtitle">
+        一个基于真实麦克风录音的 AI 英语口语节奏校准 Demo。它会分析用户朗读时的语速、停顿和节奏稳定性，并模拟展示“普通识别”和“节拍校准后识别”的差异。
+      </p>
+
+      <div class="notice" id="notice">
+        <strong>正在检测麦克风环境。</strong>
+        <span>请通过 GitHub Pages 生成的 HTTPS 链接打开，浏览器才会允许麦克风授权。</span>
+      </div>
+    </header>
+
+    <section class="grid">
+      <div class="card">
+        <h2>开始体验</h2>
+        <p>请点击开始录音，然后朗读下面这句英文。建议朗读 4 到 8 秒。</p>
+
+        <div class="sentence-box">
+          <div class="sentence">I want to improve my speaking skills every day.</div>
+        </div>
+
+        <div class="buttons">
+          <button id="startBtn">开始录音</button>
+          <button class="danger" id="stopBtn" disabled>结束并分析</button>
+          <button class="secondary" id="sampleBtn">查看样例结果</button>
+        </div>
+
+        <div class="timer" id="timer">00:00</div>
+
+        <div class="wave-wrap">
+          <canvas id="canvas" width="900" height="260"></canvas>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>个人口语节拍卡</h2>
+        <p>录音完成后，系统会根据音频能量、停顿比例和朗读时长生成分析结果。</p>
+
+        <div class="profile">
+          <div class="metric">
+            <div class="label">平均语速</div>
+            <div class="value" id="speedVal">--</div>
+            <div class="bar"><span id="speedBar"></span></div>
+          </div>
+
+          <div class="metric">
+            <div class="label">停顿次数</div>
+            <div class="value" id="pauseVal">--</div>
+            <div class="bar"><span id="pauseBar"></span></div>
+          </div>
+
+          <div class="metric">
+            <div class="label">节奏稳定性</div>
+            <div class="value" id="stableVal">--</div>
+            <div class="bar"><span id="stableBar"></span></div>
+          </div>
+
+          <div class="metric">
+            <div class="label">建议等待窗口</div>
+            <div class="value" id="waitVal">--</div>
+            <div class="bar"><span id="waitBar"></span></div>
+          </div>
+        </div>
+
+        <div class="insight" id="insight">
+          <strong>等待录音：</strong>完成朗读后，这里会生成个性化识别适配建议。
+        </div>
+      </div>
+    </section>
+
+    <section class="compare" id="compare">
+      <div class="card before">
+        <h2>普通识别 <span class="score" id="beforeScore">72%</span></h2>
+        <p>普通识别按照统一语速和停顿标准判断，容易把个人节奏差异当作发音错误。</p>
+        <ul>
+          <li id="beforeText1">句中停顿被误判为漏读。</li>
+          <li id="beforeText2">系统只提示重读，没有解释误判原因。</li>
+          <li>反馈偏粗糙，用户容易失去练习信心。</li>
+        </ul>
+      </div>
+
+      <div class="card after">
+        <h2>节拍校准后 <span class="score" id="afterScore">91%</span></h2>
+        <p>系统先建立个人口语节拍，再结合用户的语速、停顿和节奏习惯进行判断。</p>
+        <ul>
+          <li id="afterText1">识别到用户存在句中停顿习惯。</li>
+          <li id="afterText2">系统延长等待窗口，减少节奏导致的误判。</li>
+          <li>反馈更具体：区分口音差异和真正需要纠正的发音问题。</li>
+                </ul>
+      </div>
+    </section>
+
+    <section class="poster">
+      <div class="tag">Demo 结果摘要</div>
+      <h2>先适配用户，再判断发音。</h2>
+      <p class="subtitle">
+        口语节拍校准器把音游里的“节奏校准”思路迁移到 AI 英语口语学习中，让 AI 不只听见标准答案，也能听懂不同学习者真实的发音节奏。
+      </p>
+    </section>
+  </main>
+
+  <script>
+    const startBtn = document.getElementById("startBtn");
+    const stopBtn = document.getElementById("stopBtn");
+    const sampleBtn = document.getElementById("sampleBtn");
+    const timerEl = document.getElementById("timer");
+    const notice = document.getElementById("notice");
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+
+    let audioContext;
+    let analyser;
+    let source;
+    let stream;
+    let animationId;
+    let timerId;
+    let startTime = 0;
+    let energyData = [];
+
+    const sentenceWordCount = 9;
+
+    function isSecureForMic() {
+      return window.isSecureContext ||
+        location.hostname === "localhost" ||
+        location.hostname === "127.0.0.1";
+    }
+
+    function updateNotice() {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        notice.className = "notice";
+        notice.innerHTML = "<strong>当前浏览器不支持网页麦克风。</strong><span>请使用最新版 Chrome、Edge、Safari 或系统浏览器。</span>";
+        return;
+      }
+
+      if (!isSecureForMic()) {
+        notice.className = "notice";
+        notice.innerHTML = "<strong>当前页面不能授权麦克风。</strong><span>请通过 GitHub Pages 的 HTTPS 链接打开。直接双击 HTML 或 file:// 打开通常不能用麦克风。</span>";
+        return;
+      }
+
+      notice.className = "notice ok";
+      notice.innerHTML = "<strong>当前环境支持麦克风授权。</strong><span>点击“开始录音”后，请在浏览器弹窗里选择允许。</span>";
+    }
+
+    function formatTime(ms) {
+      const s = Math.floor(ms / 1000);
+      return String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
+    }
+
+    function drawIdle() {
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+      ctx.strokeStyle = "rgba(94,234,212,.55)";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+
+      for (let x = 0; x < w; x++) {
+        const y = h / 2 + Math.sin(x / 35) * 22 + Math.sin(x / 13) * 6;
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+
+      ctx.stroke();
+    }
+
+    drawIdle();
+    updateNotice();
+
+    async function startRecording() {
+      if (!isSecureForMic()) {
+        alert("当前页面不是 HTTPS，浏览器不会允许麦克风。请先部署到 GitHub Pages，再用生成的 HTTPS 链接打开。");
+        return;
+      }
+
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 2048;
+
+        source = audioContext.createMediaStreamSource(stream);
+        source.connect(analyser);
+
+        energyData = [];
+        startTime = performance.now();
+
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+        sampleBtn.disabled = true;
+
+        timerId = setInterval(() => {
+          timerEl.textContent = formatTime(performance.now() - startTime);
+        }, 200);
+
+        drawLiveWave();
+      } catch (err) {
+        alert("没有获得麦克风权限。请点击浏览器弹窗里的“允许”，或换 Chrome / Safari 打开。");
+      }
+    }
+
+    function drawLiveWave() {
+      const data = new Uint8Array(analyser.fftSize);
+      const w = canvas.width;
+      const h = canvas.height;
+
+      function frame() {
+        analyser.getByteTimeDomainData(data);
+
+        ctx.clearRect(0, 0, w, h);
+        ctx.strokeStyle = "rgba(94,234,212,.95)";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+
+        let sum = 0;
+        const step = w / data.length;
+
+        for (let i = 0; i < data.length; i++) {
+          const v = (data[i] - 128) / 128;
+          sum += v * v;
+
+          const x = i * step;
+          const y = h / 2 + v * h * 0.42;
+
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+
+        ctx.stroke();
+
+        const rms = Math.sqrt(sum / data.length);
+        energyData.push(rms);
+
+        ctx.fillStyle = "rgba(94,234,212,.18)";
+        ctx.fillRect(0, h - 10, Math.min(w, rms * w * 5), 10);
+
+        animationId = requestAnimationFrame(frame);
+      }
+
+      frame();
+    }
+
+    function stopRecording() {
+      if (animationId) cancelAnimationFrame(animationId);
+      if (timerId) clearInterval(timerId);
+      if (stream) stream.getTracks().forEach(track => track.stop());
+      if (audioContext) audioContext.close();
+
+      const duration = Math.max(1, (performance.now() - startTime) / 1000);
+
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+      sampleBtn.disabled = false;
+
+      analyze(duration, energyData);
+    }
+
+    function sampleResult() {
+      const fake = [];
+
+      for (let i = 0; i < 380; i++) {
+        const speaking = (i % 95 < 60) || (i > 240 && i < 320);
+        fake.push(speaking ? 0.04 + Math.random() * 0.07 : Math.random() * 0.008);
+      }
+
+            timerEl.textContent = "00:06";
+      drawSample(fake);
+      analyze(6.2, fake);
+    }
+
+    function drawSample(data) {
+      const w = canvas.width;
+      const h = canvas.height;
+
+      ctx.clearRect(0, 0, w, h);
+      ctx.strokeStyle = "rgba(94,234,212,.95)";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+
+      for (let i = 0; i < data.length; i++) {
+        const x = i / (data.length - 1) * w;
+        const y = h / 2 + Math.sin(i * 0.65) * data[i] * 650;
+
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+
+      ctx.stroke();
+    }
+
+    function avg(arr) {
+      if (!arr.length) return 0;
+      return arr.reduce((a, b) => a + b, 0) / arr.length;
+    }
+
+    function clamp(n, min, max) {
+      return Math.max(min, Math.min(max, n));
+    }
+
+    function countPauses(data, threshold) {
+      let pauses = 0;
+      let streak = 0;
+      let inPause = false;
+      const minFrames = Math.max(6, Math.round(data.length * 0.025));
+
+      data.forEach(v => {
+        if (v < threshold) {
+          streak++;
+
+          if (!inPause && streak >= minFrames) {
+            pauses++;
+            inPause = true;
+          }
+        } else {
+          streak = 0;
+          inPause = false;
+        }
+      });
+
+      return Math.max(0, pauses - 1);
+    }
+
+    function analyze(duration, data) {
+      if (!data || data.length < 20) {
+        alert("录音太短，建议完整朗读一句后再分析。");
+      }
+
+      const averageEnergy = avg(data);
+      const threshold = Math.max(0.012, averageEnergy * 0.55);
+      const silentCount = data.filter(v => v < threshold).length;
+      const silenceRatio = data.length ? silentCount / data.length : 0.25;
+      const pauses = countPauses(data, threshold);
+
+      const variance = avg(data.map(v => Math.pow(v - averageEnergy, 2)));
+      const stability = clamp(100 - Math.sqrt(variance) * 520 - pauses * 4 + (1 - silenceRatio) * 12, 48, 96);
+
+      const wpm = Math.round(sentenceWordCount / duration * 60);
+      const waitWindow = clamp(0.18 + silenceRatio * 0.55 + pauses * 0.035, 0.22, 0.72);
+
+      const beforeScore = clamp(
+        Math.round(88 - silenceRatio * 32 - pauses * 2.6 - Math.abs(wpm - 110) * 0.08),
+        62,
+        86
+      );
+
+      const afterScore = clamp(
+        Math.round(beforeScore + 12 + waitWindow * 12 + Math.min(pauses, 5) * 1.1),
+        84,
+        97
+      );
+
+      renderResult({
+        wpm,
+        pauses,
+        stability: Math.round(stability),
+        waitWindow,
+        beforeScore,
+        afterScore
+      });
+    }
+
+    function renderResult(result) {
+      document.getElementById("speedVal").textContent = result.wpm + " WPM";
+      document.getElementById("pauseVal").textContent = result.pauses + " 次";
+      document.getElementById("stableVal").textContent = result.stability + "%";
+      document.getElementById("waitVal").textContent = result.waitWindow.toFixed(2) + "s";
+
+      document.getElementById("speedBar").style.width = clamp(result.wpm / 165 * 100, 18, 100) + "%";
+      document.getElementById("pauseBar").style.width = clamp(result.pauses / 6 * 100, 8, 100) + "%";
+      document.getElementById("stableBar").style.width = result.stability + "%";
+      document.getElementById("waitBar").style.width = clamp(result.waitWindow / 0.75 * 100, 25, 100) + "%";
+
+      document.getElementById("beforeScore").textContent = result.beforeScore + "%";
+      document.getElementById("afterScore").textContent = result.afterScore + "%";
+
+      document.getElementById("beforeText1").textContent =
+        result.pauses >= 3
+          ? "句中停顿较多，普通识别容易把停顿后的词误判为漏读。"
+          : "普通识别没有记录个人节奏，仍可能把轻微停顿当作不流畅。";
+
+      document.getElementById("beforeText2").textContent =
+        "普通模型没有适配你的语速，给出的完整度偏低。";
+
+      document.getElementById("afterText1").textContent =
+        "系统记录到你的停顿特征，建议把识别等待窗口调整为 " + result.waitWindow.toFixed(2) + " 秒。";
+
+      document.getElementById("afterText2").textContent =
+        "校准后完整度提升到 " + result.afterScore + "%，更适合区分个人口音和真实发音错误。";
+
+      let advice = "";
+
+      if (result.pauses >= 3) {
+        advice = "你的朗读存在较明显句中停顿，系统应延长等待窗口，避免把停顿后的单词判成漏读。";
+      } else if (result.wpm > 135) {
+        advice = "你的朗读速度偏快，系统应提高连读容忍度，并重点反馈单词边界是否清晰。";
+      } else {
+        advice = "你的整体节奏较稳定，系统只需要轻量校准，就能减少统一模型带来的误判。";
+      }
+
+      document.getElementById("insight").innerHTML =
+        "<strong>个性化建议：</strong>" + advice + " 这就是“先适配用户，再判断发音”的核心体验。";
+
+      document.getElementById("compare").classList.add("show");
+      document.getElementById("compare").scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    startBtn.addEventListener("click", startRecording);
+    stopBtn.addEventListener("click", stopRecording);
+    sampleBtn.addEventListener("click", sampleResult);
+  </script>
+</body>
+</html>
+

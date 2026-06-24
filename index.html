@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>AI 口语校准器 Demo</title>
+<style>
+
+:root{--bg:#070a14;--ink:#f8fbff;--muted:#aab8cf;--a:#6ee7f9;--b:#ff6b9a;--c:#a78bfa;--g:#8ff0b3;--w:#ffd166;--line:rgba(255,255,255,.14);--glass:rgba(255,255,255,.08);--glass2:rgba(255,255,255,.12)}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{min-height:100vh;font-family:system-ui,-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);background:radial-gradient(circle at 12% 6%,rgba(110,231,249,.32),transparent 27rem),radial-gradient(circle at 86% 12%,rgba(255,107,154,.26),transparent 29rem),radial-gradient(circle at 50% 90%,rgba(167,139,250,.18),transparent 34rem),linear-gradient(180deg,#070a14 0%,#0d1324 48%,#111827 100%);line-height:1.7;padding:18px;overflow-x:hidden}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:54px 54px;mask-image:linear-gradient(to bottom,black,transparent 78%)}
+.page{max-width:1160px;margin:auto}
+.hero,.card,.poster,.dock{border:1px solid var(--line);background:linear-gradient(135deg,rgba(255,255,255,.13),rgba(255,255,255,.045));box-shadow:0 28px 90px rgba(0,0,0,.38);backdrop-filter:blur(20px)}
+.hero{position:relative;overflow:hidden;min-height:620px;padding:clamp(28px,6vw,76px);border-radius:36px}
+.orb{position:absolute;border-radius:50%;filter:blur(2px);opacity:.55}
+.o1{right:-80px;top:-90px;width:310px;height:310px;background:conic-gradient(from 120deg,var(--a),transparent,var(--b),transparent,var(--c))}
+.o2{left:-110px;bottom:-120px;width:280px;height:280px;background:radial-gradient(circle,var(--c),transparent 70%);opacity:.22}
+.ipa{position:absolute;right:28px;top:92px;color:rgba(255,255,255,.06);font:950 clamp(46px,9vw,112px) ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:-.08em;transform:rotate(-7deg);white-space:nowrap}
+.tag{display:inline-flex;gap:8px;align-items:center;padding:8px 12px;border:1px solid var(--line);border-radius:999px;color:var(--a);background:rgba(110,231,249,.08);font-size:13px;font-weight:900}
+.tag:before{content:"";width:8px;height:8px;border-radius:50%;background:var(--a);box-shadow:0 0 22px var(--a)}
+h1{position:relative;z-index:1;margin-top:58px;font-size:clamp(44px,9vw,104px);line-height:.9;letter-spacing:-.09em;font-weight:950}
+.grad{background:linear-gradient(90deg,var(--ink),var(--a) 48%,var(--b));-webkit-background-clip:text;color:transparent}
+.sub{position:relative;z-index:1;max-width:790px;margin-top:24px;color:var(--muted);font-size:18px}
+.slogan{position:relative;z-index:1;margin-top:26px;padding:18px 20px;border-left:4px solid var(--a);border-radius:20px;background:rgba(110,231,249,.09);font-size:21px;font-weight:950}
+.btns{display:flex;flex-wrap:wrap;gap:12px;margin-top:24px}
+a.btn,button{min-height:50px;padding:0 20px;border:0;border-radius:16px;font:inherit;font-weight:950;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;color:#031418;background:linear-gradient(135deg,var(--a),#b8f7ff);cursor:pointer;box-shadow:0 12px 30px rgba(110,231,249,.18)}
+.btn.alt,button.alt{color:var(--ink);border:1px solid var(--line);background:rgba(255,255,255,.1);box-shadow:none}
+button.danger{background:linear-gradient(135deg,var(--b),#ff9fba);color:#21030b}
+button:disabled{opacity:.45;cursor:not-allowed}
+.dock{position:relative;z-index:1;display:grid;grid-template-columns:1.1fr .9fr;gap:16px;margin-top:42px;padding:16px;border-radius:28px}
+.phone{border:1px solid var(--line);border-radius:24px;background:linear-gradient(180deg,rgba(255,255,255,.1),rgba(255,255,255,.04));padding:16px}
+.phone-top{display:flex;justify-content:space-between;color:var(--muted);font-size:12px}
+.mini-wave{height:86px;margin-top:14px;border-radius:18px;background:linear-gradient(90deg,rgba(110,231,249,.1),rgba(255,107,154,.1));position:relative;overflow:hidden}
+.mini-wave:before{content:"";position:absolute;inset:22px 12px;background:repeating-linear-gradient(90deg,var(--a) 0 5px,transparent 5px 14px);filter:drop-shadow(0 0 12px var(--a));opacity:.65;clip-path:polygon(0 58%,5% 48%,10% 62%,15% 35%,20% 68%,25% 42%,30% 60%,35% 30%,40% 70%,45% 45%,50% 58%,55% 38%,60% 68%,65% 50%,70% 60%,75% 32%,80% 70%,85% 46%,90% 62%,95% 52%,100% 57%)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.chip{padding:6px 9px;border-radius:999px;background:rgba(255,255,255,.08);color:var(--muted);font:800 12px ui-monospace,SFMono-Regular,Menlo}
+.chip.hot{color:var(--b);background:rgba(255,107,154,.11)}
+.dash{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{padding:14px;border:1px solid var(--line);border-radius:20px;background:rgba(255,255,255,.06)}
+.tile b{display:block;font-size:24px}
+.tile span{color:var(--muted);font-size:12px}
+section{margin-top:28px}
+.head{display:flex;justify-content:space-between;gap:18px;align-items:end;margin:42px 0 16px}
+.head h2{font-size:clamp(28px,4.4vw,46px);line-height:1.08;letter-spacing:-.05em}
+.head p{max-width:570px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:1.08fr .92fr;gap:16px}
+.card,.poster{border-radius:30px;padding:24px;position:relative;overflow:hidden}
+.card:before{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.07),transparent 55%);pointer-events:none}
+.card>*{position:relative}
+.card h3{margin-bottom:8px;font-size:21px}
+.card p,.card li{color:var(--muted)}
+.pain,.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.pain .card,.step{min-height:155px}
+.step{padding:20px;border:1px solid var(--line);border-radius:24px;background:linear-gradient(135deg,rgba(255,255,255,.09),rgba(255,255,255,.04))}
+.step i{display:grid;place-items:center;width:38px;height:38px;margin-bottom:12px;border-radius:14px;background:linear-gradient(135deg,var(--a),#c8f9ff);color:#031418;font-style:normal;font-weight:950}
+.notice{margin-top:14px;padding:14px;border:1px solid rgba(255,209,102,.35);border-radius:18px;background:rgba(255,209,102,.08);color:var(--muted)}
+.notice.ok{border-color:rgba(110,231,249,.35);background:rgba(110,231,249,.08)}
+.sentence{margin-top:16px;padding:20px;border:1px solid rgba(110,231,249,.35);border-radius:22px;background:linear-gradient(135deg,rgba(110,231,249,.1),rgba(167,139,250,.08));font-size:clamp(21px,4vw,32px);font-weight:950;line-height:1.3}
+.sentence small{display:block;margin-top:10px;color:var(--muted);font-size:14px;font-weight:750}
+.timer{margin-top:12px;color:var(--a);font:900 29px ui-monospace,SFMono-Regular,Menlo,monospace}
+.wave{height:176px;margin-top:16px;border:1px solid var(--line);border-radius:24px;background:repeating-linear-gradient(90deg,transparent 0 24px,rgba(255,255,255,.05) 24px 25px),radial-gradient(circle at 50% 50%,rgba(110,231,249,.09),rgba(255,255,255,.035));overflow:hidden}
+canvas{display:block;width:100%;height:100%}
+.profile{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.m{padding:15px;border:1px solid var(--line);border-radius:20px;background:rgba(255,255,255,.06)}
+.m small{display:block;color:var(--muted);font-weight:850}
+.m b{display:block;margin-top:4px;font:900 24px ui-monospace,SFMono-Regular,Menlo,monospace}
+.bar{height:8px;margin-top:10px;border-radius:99px;background:rgba(255,255,255,.1);overflow:hidden}
+.bar span{display:block;width:0;height:100%;background:linear-gradient(90deg,var(--a),var(--b));transition:.8s}
+.insight{margin-top:14px;padding:17px;border:1px solid rgba(110,231,249,.35);border-radius:20px;background:rgba(110,231,249,.08);color:var(--muted)}
+.insight strong{color:var(--a)}
+.phonemes{display:none;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:16px}
+.phonemes.show{display:grid}
+.ph{padding:15px;border:1px solid var(--line);border-radius:20px;background:rgba(255,255,255,.065)}
+.ph b{display:block;font:950 25px ui-monospace,SFMono-Regular,Menlo}
+.ph span{display:block;margin-top:4px;color:var(--muted);font-size:13px}
+.ph.good{border-color:rgba(143,240,179,.4);box-shadow:inset 0 0 30px rgba(143,240,179,.05)}
+.ph.mid{border-color:rgba(255,209,102,.42)}
+.ph.weak{border-color:rgba(255,107,154,.45);box-shadow:inset 0 0 30px rgba(255,107,154,.06)}
+.compare{display:none;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+.compare.show{display:grid}
+.score{float:right;font:950 28px ui-monospace,SFMono-Regular,Menlo}
+.before .score{color:var(--b)}
+.after .score{color:var(--a)}
+ul{display:grid;gap:10px;margin-top:12px;list-style:none}
+li{padding:12px;border-radius:15px;background:rgba(255,255,255,.06)}
+.scene{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+.scene span{padding:13px;border:1px solid var(--line);border-radius:18px;text-align:center;color:var(--muted);background:rgba(255,255,255,.06);font-weight:850}
+.poster{background:radial-gradient(circle at 85% 10%,rgba(255,107,154,.22),transparent 22rem),linear-gradient(135deg,rgba(110,231,249,.14),rgba(255,255,255,.06))}
+.poster h2{font-size:clamp(38px,7vw,78px);line-height:.94;letter-spacing:-.075em;margin-top:18px}
+.poster p{max-width:800px;margin-top:16px;color:var(--muted);font-size:18px}
+.foot{margin:24px 0;color:var(--muted);text-align:center;font-size:13px}
+
+@media(max-width:860px){body{padding:12px}
+.hero{min-height:auto;border-radius:28px}
+.dock,.stats,.grid,.pain,.steps,.compare,.scene,.phonemes{grid-template-columns:1fr}
+.profile{grid-template-columns:1fr}
+.head{display:block}
+button,a.btn{width:100%}
+.scene span{text-align:left}
+.ipa{display:none}
+}
+
+</style>
+</head>
+<body>
+<main class="page">
+<header class="hero">
+<div class="orb o1"></div>
+<div class="orb o2"></div>
+<div class="ipa">/θ/ /v/ /ʃ/</div>
+<div class="tag">学习工作赛道 · 音素画像 + 节奏画像 Demo</div>
+<h1>
+<span class="grad">AI 口语</span>
+<br>校准器</h1>
+<p class="sub">不是只看语速，而是先测试用户是否长期发不出某些关键音标。系统用一句包含难发音素的测试句，建立“节奏画像 + 音素画像”，再给出更公平、更具体的口语反馈。</p>
+<div class="slogan">不是简单判错，而是告诉你为什么错、该练哪个音。</div>
+<div class="btns">
+<a class="btn" href="#demo">开始音素测试</a>
+<a class="btn alt" href="#value">查看拓展价值</a>
+</div>
+<div class="dock">
+<div class="phone">
+<div class="phone-top">
+<span>Pronunciation Scan</span>
+<span>Live</span>
+</div>
+<div class="mini-wave"></div>
+<div class="chips">
+<span class="chip hot">/θ/ risk</span>
+<span class="chip">/v/ clear</span>
+<span class="chip hot">final /k/</span>
+<span class="chip">rhythm 82%</span>
+</div>
+</div>
+<div class="dash">
+<div class="tile">
+<b>5</b>
+<span>关键音素</span>
+</div>
+<div class="tile">
+<b>2</b>
+<span>高风险点</span>
+</div>
+<div class="tile">
+<b>0.42s</b>
+<span>等待窗口</span>
+</div>
+<div class="tile">
+<b>92%</b>
+<span>校准反馈</span>
+</div>
+</div>
+</div>
+</header>
+
+<section>
+<div class="head">
+<h2>为什么要测音标？</h2>
+<p>很多学习者不是整句话都错，而是长期发不出某几个音。普通系统只给“错”，真正需要的是定位发音短板。</p>
+</div>
+<div class="pain">
+<div class="card">
+<h3>音素替代</h3>
+<p>把 /θ/ 读成 /s/，把 /ð/ 读成 /z/ 或 /d/。</p>
+</div>
+<div class="card">
+<h3>长短音混淆</h3>
+<p>ship 与 sheep、sit 与 seat 容易被读成同一个音。</p>
+</div>
+<div class="card">
+<h3>词尾吞音</h3>
+<p>week、speak、good 的结尾辅音被吞掉，导致识别不完整。</p>
+</div>
+</div>
+</section>
+
+<section>
+<div class="head">
+<h2>Demo 怎么判断？</h2>
+<p>当前演示会真实录音并分析节奏；音素画像用“测试句覆盖 + 模拟诊断”的方式展示产品逻辑。</p>
+</div>
+<div class="steps">
+<div class="step">
+<i>1</i>
+<h3>读测试句</h3>
+<p>句子覆盖 /θ/、/ð/、/v/、/ʃ/、长短元音和词尾辅音。</p>
+</div>
+<div class="step">
+<i>2</i>
+<h3>生成双画像</h3>
+<p>一边分析语音节奏，一边标出可能薄弱音素。</p>
+</div>
+<div class="step">
+<i>3</i>
+<h3>给训练路径</h3>
+<p>不是只说重读，而是指出哪个音标需要练。</p>
+</div>
+</div>
+</section>
+
+<section id="demo">
+<div class="head">
+<h2>跟读式音素测试</h2>
+<p>AI 先念标准示范，用户再跟读，系统对比用户的节奏与关键音素风险。</p>
+</div>
+<div class="grid">
+<div class="card">
+<h3>跟读测试句</h3>
+<p>先点“播放 AI 示范”，听一遍标准读法，再点击“开始跟读录音”。</p>
+<div class="steps" style="grid-template-columns:repeat(3,1fr);margin-top:14px">
+<div class="step">
+<i>1</i>
+<h3>AI 示范</h3>
+<p>先听标准音素和句子节奏。</p>
+</div>
+<div class="step">
+<i>2</i>
+<h3>用户跟读</h3>
+<p>模仿示范朗读同一句。</p>
+</div>
+<div class="step">
+<i>3</i>
+<h3>画像反馈</h3>
+<p>生成音素与节奏诊断。</p>
+</div>
+</div>
+<div class="notice" id="notice">
+<strong>正在检测麦克风环境。</strong>
+<span> 请用 GitHub Pages 的 HTTPS 链接打开。</span>
+</div>
+<div class="sentence">This very thin student reads three short stories every week.<small>覆盖：/ð/ this、/v/ very、/θ/ thin/three、/ʃ/ short、/iː/ three/week、词尾 /k/ week</small>
+</div>
+<div class="btns">
+<button class="alt" id="playBtn">播放 AI 示范</button>
+<button id="startBtn">开始跟读录音</button>
+<button class="danger" id="stopBtn" disabled>结束并分析</button>
+<button class="alt" id="sampleBtn">不方便录音？查看完整演示</button>
+</div>
+<div class="timer" id="timer">00:00</div>
+<div class="wave">
+<canvas id="canvas" width="900" height="260"></canvas>
+</div>
+</div>
+
+<div class="card">
+<h3>节奏画像</h3>
+<p>真实音频会用于估算语速、停顿和稳定性。</p>
+<div class="profile">
+<div class="m">
+<small>平均语速</small>
+<b id="speedVal">--</b>
+<div class="bar">
+<span id="speedBar"></span>
+</div>
+</div>
+<div class="m">
+<small>停顿次数</small>
+<b id="pauseVal">--</b>
+<div class="bar">
+<span id="pauseBar"></span>
+</div>
+</div>
+<div class="m">
+<small>节奏稳定性</small>
+<b id="stableVal">--</b>
+<div class="bar">
+<span id="stableBar"></span>
+</div>
+</div>
+<div class="m">
+<small>误判等待窗口</small>
+<b id="waitVal">--</b>
+<div class="bar">
+<span id="waitBar"></span>
+</div>
+</div>
+</div>
+<div class="insight" id="insight">
+<strong>等待跟读：</strong>先播放 AI 示范，再录制你的跟读，完成后会生成节奏建议和音素诊断。</div>
+</div>
+</div>
+
+<div class="phonemes" id="phonemes">
+<div class="ph weak">
+<b>/θ/</b>
+<span id="ph1">可能读成 /s/ 或 /t/</span>
+</div>
+<div class="ph mid">
+<b>/ð/</b>
+<span id="ph2">需注意舌尖位置</span>
+</div>
+<div class="ph good">
+<b>/v/</b>
+<span id="ph3">较稳定</span>
+</div>
+<div class="ph mid">
+<b>/ʃ/</b>
+<span id="ph4">和 /s/ 易混</span>
+</div>
+<div class="ph weak">
+<b>尾音</b>
+<span id="ph5">week 的 /k/ 可能被吞</span>
+</div>
+</div>
+
+<div class="compare" id="compare">
+<div class="card before">
+<h3>普通跟读评分 <span class="score" id="beforeScore">70%</span></h3>
+<p>只判断“像不像示范”，但不解释具体原因。</p>
+<ul>
+<li id="beforeText1">three / thin 附近被判为不清晰。</li>
+<li>系统只提示重读整句，学习者不知道该练哪个音。</li>
+<li>长期薄弱音标会反复被扣分，容易挫败。</li>
+</ul>
+</div>
+<div class="card after">
+<h3>校准后反馈 <span class="score" id="afterScore">92%</span></h3>
+<p>系统结合音素画像，输出具体训练建议。</p>
+<ul>
+<li id="afterText1">识别到 /θ/ 可能不稳定，建议先练舌尖轻触上齿。</li>
+<li id="afterText2">词尾辅音可能被吞，建议单独练 week /wiːk/。</li>
+<li>先定位短板，再进行句子跟读，更像个性化教练。</li>
+</ul>
+</div>
+</div>
+</section>
+
+<section id="value">
+<div class="head">
+<h2>拓展价值</h2>
+<p>这个能力可以从英语学习扩展到更多需要语音理解的场景。</p>
+</div>
+<div class="scene">
+<span>音标训练</span>
+<span>口语考试</span>
+<span>AI 外教</span>
+<span>课堂作业</span>
+<span>发音康复</span>
+<span>口音公平</span>
+</div>
+</section>
+
+<section class="poster">
+<div class="tag">作品核心表达</div>
+<h2>先建立发音画像，再判断口语表现。</h2>
+<p>AI 口语校准器不只是判断“对或错”，而是识别用户长期发不准的音素、节奏习惯和误判风险。它让 AI 从统一打分工具，变成真正理解学习者的个性化发音教练。</p>
+</section>
+
+<div class="foot">说明：此 Demo 真实分析录音节奏；音素诊断为产品逻辑演示，可在后续版本接入真实音素识别模型。</div>
+</main>
+
+<script>
+const $=id=>document.getElementById(id),playBtn=$("playBtn"),startBtn=$("startBtn"),stopBtn=$("stopBtn"),sampleBtn=$("sampleBtn"),timerEl=$("timer"),notice=$("notice"),canvas=$("canvas"),ctx=canvas.getContext("2d");
+let audioContext,analyser,source,stream,animationId,timerId,startTime=0,energyData=[];
+const wordCount=10,demoSentence="This very thin student reads three short stories every week.";
+
+function secure(){return window.isSecureContext||location.hostname==="localhost"||location.hostname==="127.0.0.1"}
+function clamp(n,min,max){return Math.max(min,Math.min(max,n))}
+function avg(a){return a.length?a.reduce((x,y)=>x+y,0)/a.length:0}
+
+function updateNotice(){
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+    notice.innerHTML="<strong>当前浏览器不支持网页麦克风。</strong><span> 请换 Chrome、Edge、Safari。</span>";
+    return
+  }
+  if(!secure()){
+    notice.innerHTML="<strong>当前页面不能授权麦克风。</strong><span> 请用 GitHub Pages 的 HTTPS 链接打开。</span>";
+    return
+  }
+  notice.className="notice ok";
+  notice.innerHTML="<strong>当前环境支持麦克风授权。</strong><span> 点击开始录音后请选择允许。</span>"
+}
+
+function playDemo(){
+  if(!("speechSynthesis" in window)){
+    alert("当前浏览器不支持 AI 语音示范，可直接点击开始跟读录音。");
+    return
+  }
+  speechSynthesis.cancel();
+  let u=new SpeechSynthesisUtterance(demoSentence);
+  u.lang="en-US";
+  u.rate=.78;
+  u.pitch=1;
+  u.onstart=()=>{
+    playBtn.textContent="AI 正在示范…";
+    playBtn.disabled=true
+  };
+  u.onend=()=>{
+    playBtn.textContent="重新播放 AI 示范";
+    playBtn.disabled=false;
+    notice.className="notice ok";
+    notice.innerHTML="<strong>示范播放完成。</strong><span> 现在请点击“开始跟读录音”，尽量模仿刚才的音标和节奏。</span>"
+  };
+  speechSynthesis.speak(u)
+}
+
+function fmt(ms){
+  let s=Math.floor(ms/1000);
+  return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0")
+}
+
+function idle(){
+  let w=canvas.width,h=canvas.height;
+  ctx.clearRect(0,0,w,h);
+  ctx.strokeStyle="rgba(110,231,249,.62)";
+  ctx.lineWidth=4;
+  ctx.beginPath();
+  for(let x=0;x<w;x++){
+    let y=h/2+Math.sin(x/34)*22+Math.sin(x/12)*6;
+    if(x===0)ctx.moveTo(x,y);
+    else ctx.lineTo(x,y)
+  }
+  ctx.stroke()
+}
+idle();
+updateNotice();
+
+async function startRecording(){
+  if(!secure()){
+    alert("请用 GitHub Pages 的 HTTPS 链接打开，否则浏览器不会授权麦克风。");
+    return
+  }
+  try{
+    if("speechSynthesis" in window)speechSynthesis.cancel();
+    stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    audioContext=new(window.AudioContext||window.webkitAudioContext)();
+    analyser=audioContext.createAnalyser();
+    analyser.fftSize=2048;
+    source=audioContext.createMediaStreamSource(stream);
+    source.connect(analyser);
+    energyData=[];
+    startTime=performance.now();
+    startBtn.disabled=true;
+    stopBtn.disabled=false;
+    sampleBtn.disabled=true;
+    playBtn.disabled=true;
+    timerId=setInterval(()=>timerEl.textContent=fmt(performance.now()-startTime),200);
+    notice.className="notice ok";
+    notice.innerHTML="<strong>正在录制跟读。</strong><span> 朗读完后点击“结束并分析”。</span>";
+    drawLive()
+  }catch(e){
+    alert("没有获得麦克风权限，请点击允许，或换 Chrome / Safari 打开。")
+  }
+}
+
+function drawLive(){
+  let data=new Uint8Array(analyser.fftSize),w=canvas.width,h=canvas.height;
+  function f(){
+    analyser.getByteTimeDomainData(data);
+    ctx.clearRect(0,0,w,h);
+    ctx.strokeStyle="rgba(110,231,249,.95)";
+    ctx.lineWidth=3;
+    ctx.beginPath();
+    let sum=0,step=w/data.length;
+    for(let i=0;i<data.length;i++){
+      let v=(data[i]-128)/128;
+      sum+=v*v;
+      let x=i*step,y=h/2+v*h*.42;
+      if(i===0)ctx.moveTo(x,y);
+      else ctx.lineTo(x,y)
+    }
+    ctx.stroke();
+    let rms=Math.sqrt(sum/data.length);
+    energyData.push(rms);
+    ctx.fillStyle="rgba(110,231,249,.18)";
+    ctx.fillRect(0,h-10,Math.min(w,rms*w*5),10);
+    animationId=requestAnimationFrame(f)
+  }
+  f()
+}
+
+function stopRecording(){
+  if(animationId)cancelAnimationFrame(animationId);
+  if(timerId)clearInterval(timerId);
+  if(stream)stream.getTracks().forEach(t=>t.stop());
+  if(audioContext)audioContext.close();
+  let d=Math.max(1,(performance.now()-startTime)/1000);
+  startBtn.disabled=false;
+  stopBtn.disabled=true;
+  sampleBtn.disabled=false;
+  playBtn.disabled=false;
+  analyze(d,energyData,false)
+}
+
+function sampleResult(){
+  let fake=[];
+  for(let i=0;i<420;i++){
+    let speaking=(i%88<56)||(i>260&&i<350);
+    fake.push(speaking?.045+Math.random()*.075:Math.random()*.008)
+  }
+  timerEl.textContent="00:07";
+  drawSample(fake);
+  analyze(7.1,fake,true)
+}
+
+function drawSample(a){
+  let w=canvas.width,h=canvas.height;
+  ctx.clearRect(0,0,w,h);
+  ctx.strokeStyle="rgba(110,231,249,.95)";
+  ctx.lineWidth=3;
+  ctx.beginPath();
+  for(let i=0;i<a.length;i++){
+    let x=i/(a.length-1)*w,y=h/2+Math.sin(i*.7)*a[i]*620;
+    if(i===0)ctx.moveTo(x,y);
+    else ctx.lineTo(x,y)
+  }
+  ctx.stroke()
+}
+
+function countPauses(a,t){
+  let p=0,s=0,on=false,min=Math.max(6,Math.round(a.length*.025));
+  a.forEach(v=>{
+    if(v<t){
+      s++;
+      if(!on&&s>=min){
+        p++;
+        on=true
+      }
+    }else{
+      s=0;
+      on=false
+    }
+  });
+  return Math.max(0,p-1)
+}
+
+function analyze(d,a,sample){
+  if(!a||a.length<20)alert("录音太短，建议完整朗读一句后再分析。");
+  let av=avg(a),
+      th=Math.max(.012,av*.55),
+      silent=a.filter(v=>v<th).length,
+      ratio=a.length?silent/a.length:.25,
+      p=countPauses(a,th),
+      variance=avg(a.map(v=>(v-av)**2)),
+      stable=clamp(100-Math.sqrt(variance)*520-p*4+(1-ratio)*12,48,96),
+      wpm=Math.round(wordCount/d*60),
+      wait=clamp(.18+ratio*.55+p*.035,.22,.72),
+      before=clamp(Math.round(84-ratio*26-p*2.2-Math.abs(wpm-105)*.07),60,84),
+      after=clamp(Math.round(before+14+wait*10+Math.min(p,5)*1.1),84,97);
+  render({wpm,p,stable:Math.round(stable),wait,before,after,sample})
+}
+
+function render(r){
+  $("speedVal").textContent=r.wpm+" WPM";
+  $("pauseVal").textContent=r.p+" 次";
+  $("stableVal").textContent=r.stable+"%";
+  $("waitVal").textContent=r.wait.toFixed(2)+"s";
+  $("speedBar").style.width=clamp(r.wpm/165*100,18,100)+"%";
+  $("pauseBar").style.width=clamp(r.p/6*100,8,100)+"%";
+  $("stableBar").style.width=r.stable+"%";
+  $("waitBar").style.width=clamp(r.wait/.75*100,25,100)+"%";
+  $("beforeScore").textContent=r.before+"%";
+  $("afterScore").textContent=r.after+"%";
+
+  let weak=r.sample||r.p>=2;
+  $("ph1").textContent=weak?"高风险：thin/three 可能读成 /s/ 或 /t/":"中风险：建议继续测试 /θ/";
+  $("ph2").textContent=weak?"中风险：this 的 /ð/ 舌尖位置需稳定":"较稳定：this 发音风险较低";
+  $("ph3").textContent="较稳定：very 的 /v/ 可保持";
+  $("ph4").textContent=r.wpm>135?"中风险：语速快时 /ʃ/ 易和 /s/ 混":"可观察：short 的 /ʃ/ 需与 /s/ 区分";
+  $("ph5").textContent=weak?"高风险：week 结尾 /k/ 可能被吞":"中风险：注意保留词尾 /k/";
+
+  $("beforeText1").textContent=weak?"three、thin、week 附近被判不清晰，但系统不知道具体原因。":"普通识别能给分，但难解释具体发音风险。";
+  $("afterText1").textContent=weak?"识别到 /θ/ 与词尾 /k/ 可能是长期薄弱点，优先练这两个音。":"系统生成音素画像，后续可持续追踪薄弱音。";
+  $("afterText2").textContent="建议训练：thin /θɪn/、three /θriː/、week /wiːk/，再回到整句跟读。";
+
+  let advice=weak?"你的主要训练路径不是反复读整句，而是先练 /θ/ 的舌尖位置和 week 的词尾 /k/，再做句子跟读。":"你的节奏较稳定，下一步可增加更多测试句，确认 /θ/、/ð/ 和长短元音是否稳定。";
+  $("insight").innerHTML="<strong>个性化建议：</strong>"+advice;
+  $("phonemes").classList.add("show");
+  $("compare").classList.add("show");
+  $("phonemes").scrollIntoView({behavior:"smooth",block:"start"})
+}
+
+playBtn.onclick=playDemo;
+startBtn.onclick=startRecording;
+stopBtn.onclick=stopRecording;
+sampleBtn.onclick=sampleResult;
+</script>
+</body>
+</html>
